@@ -1,0 +1,99 @@
+{
+  "inventory": "hardened-example",
+  "_comment": "Synthetic configuration with every check satisfied. Expect zero findings.",
+  "servers": [
+    {
+      "name": "tickets",
+      "transport": "streamable-http",
+      "url": "https://tickets-mcp.example.test/mcp",
+      "role": "resource_server",
+      "auth": {
+        "type": "oauth2",
+        "issuer": "https://auth.example.test",
+        "expected_issuer": "https://auth.example.test",
+        "validate_issuer": true,
+        "validate_audience": true,
+        "accepted_audiences": [
+          "https://tickets-mcp.example.test/mcp"
+        ],
+        "pkce_required": true,
+        "pkce_methods": [
+          "S256"
+        ],
+        "resource_indicators_required": true,
+        "token_passthrough": false,
+        "downstream_auth": "token_exchange"
+      },
+      "tools": [
+        {
+          "name": "get_ticket",
+          "description": "Return one ticket by ID.",
+          "scopes": [
+            "tickets:read"
+          ],
+          "annotations": {
+            "readOnlyHint": true
+          }
+        },
+        {
+          "name": "comment_on_ticket",
+          "description": "Add a comment to a ticket.",
+          "scopes": [
+            "tickets:comment"
+          ],
+          "annotations": {
+            "readOnlyHint": false,
+            "destructiveHint": false
+          }
+        },
+        {
+          "name": "delete_ticket",
+          "description": "Permanently delete a ticket.",
+          "scopes": [
+            "tickets:delete"
+          ],
+          "annotations": {
+            "readOnlyHint": false,
+            "destructiveHint": true
+          },
+          "requires_approval": true
+        }
+      ],
+      "resources": [
+        {
+          "uri": "tickets://acme/queue/security",
+          "name": "Security queue"
+        }
+      ],
+      "allowed_roots": [
+        "tickets://acme/"
+      ]
+    },
+    {
+      "name": "local-notes",
+      "transport": "stdio",
+      "role": "resource_server",
+      "tools": [
+        {
+          "name": "list_notes",
+          "description": "List note titles.",
+          "scopes": [
+            "notes:read"
+          ],
+          "annotations": {
+            "readOnlyHint": true
+          }
+        }
+      ],
+      "resources": [
+        {
+          "uri": "file:///home/analyst/notes/runbook.md",
+          "name": "Runbook"
+        }
+      ],
+      "allowed_roots": [
+        "file:///home/analyst/notes/"
+      ]
+    }
+  ]
+}

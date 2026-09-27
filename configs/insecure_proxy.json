@@ -1,0 +1,115 @@
+{
+  "inventory": "insecure-proxy-example",
+  "_comment": "Synthetic, deliberately misconfigured deployment used to exercise the OAuth, privilege, and boundary checks.",
+  "servers": [
+    {
+      "name": "crm-proxy",
+      "transport": "streamable-http",
+      "url": "https://crm-mcp.example.test/mcp",
+      "role": "proxy",
+      "auth": {
+        "type": "oauth2",
+        "issuer": "http://auth.example.test",
+        "validate_issuer": false,
+        "validate_audience": false,
+        "pkce_required": false,
+        "resource_indicators_required": false,
+        "token_passthrough": true,
+        "downstream_auth": "passthrough",
+        "static_client_id": true,
+        "dynamic_client_registration": true,
+        "per_client_consent": false
+      },
+      "tools": [
+        {
+          "name": "search_contacts",
+          "description": "Search CRM contacts.",
+          "scopes": [
+            "crm:read",
+            "crm:write"
+          ],
+          "annotations": {
+            "readOnlyHint": true
+          }
+        },
+        {
+          "name": "delete_account",
+          "description": "Delete a CRM account.",
+          "scopes": [
+            "crm:*"
+          ],
+          "annotations": {
+            "readOnlyHint": false,
+            "destructiveHint": true
+          }
+        },
+        {
+          "name": "export_everything",
+          "description": "Export all CRM data.",
+          "scopes": [
+            "admin"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "legacy-files",
+      "transport": "streamable-http",
+      "url": "http://files.example.test:8080/mcp",
+      "auth": {
+        "type": "none"
+      },
+      "tools": [
+        {
+          "name": "read_file",
+          "description": "Read a file.",
+          "scopes": [
+            "files:read"
+          ],
+          "annotations": {
+            "readOnlyHint": true
+          }
+        }
+      ],
+      "resources": [
+        {
+          "uri": "file:///srv/share/reports/q3.csv"
+        },
+        {
+          "uri": "file:///srv/share/../../etc/shadow"
+        }
+      ],
+      "allowed_roots": [
+        "file:///"
+      ]
+    },
+    {
+      "name": "ops-bot",
+      "transport": "streamable-http",
+      "url": "https://ops-mcp.example.test/mcp",
+      "role": "proxy",
+      "auth": {
+        "type": "static_token",
+        "downstream_auth": "static_credential"
+      },
+      "tools": [
+        {
+          "name": "rotate_credentials",
+          "description": "Rotate service credentials.",
+          "scopes": [
+            "ops:rotate"
+          ],
+          "annotations": {
+            "readOnlyHint": false,
+            "destructiveHint": false
+          }
+        }
+      ],
+      "resources": [
+        {
+          "uri": "file:///var/lib/ops/state.json"
+        }
+      ]
+    }
+  ]
+}
