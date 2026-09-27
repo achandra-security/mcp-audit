@@ -1,0 +1,151 @@
+mcp-audit assessment report
+===========================
+
+configs/insecure_proxy.json: 21 finding(s) (critical=5, high=10, medium=5, low=1)
+
+  [CRITICAL] MCP-003 Remote MCP server without OAuth authorization
+    server:      legacy-files
+    target:      auth
+    evidence:    streamable-http transport at http://files.example.test:8080/mcp with auth.type=none
+    remediation: Protect remote MCP servers as OAuth 2.1 resource servers. Replace static shared tokens with short-lived, audience-bound access tokens.
+    references:  MCP specification 2025-06-18, Basic > Authorization; RFC 9700: Best Current Practice for OAuth 2.0 Security
+
+  [CRITICAL] MCP-005 Token audience is not validated or is too broad
+    server:      crm-proxy
+    target:      auth.audience
+    evidence:    validate_audience=false
+    remediation: Accept only tokens whose 'aud' is this MCP server's canonical URI. A token minted for another service must be rejected, even when it comes from the same issuer.
+    references:  MCP specification 2025-06-18, Basic > Authorization; RFC 8707: Resource Indicators for OAuth 2.0; RFC 9068: JWT Profile for OAuth 2.0 Access Tokens (iss/aud validation)
+
+  [CRITICAL] MCP-007 Inbound access token is passed through to downstream APIs
+    server:      crm-proxy
+    target:      auth.downstream
+    evidence:    token_passthrough=True, downstream_auth=passthrough
+    remediation: Never forward the client's token downstream. Exchange it for a new token scoped to the downstream audience (RFC 8693 token exchange), or use the server's own credential with per-user authorization.
+    references:  MCP specification 2025-06-18, Basic > Security Best Practices; RFC 8693: OAuth 2.0 Token Exchange
+
+  [CRITICAL] MCP-012 Destructive tool does not require human approval
+    server:      crm-proxy
+    target:      tool:delete_account
+    evidence:    destructiveHint=true; requires_approval=false; scopes ['crm:*']
+    remediation: Require explicit human confirmation, bound to the specific call, for destructive tools. Enforce it in the host or gateway, not in the tool description.
+    references:  MCP specification 2025-06-18, Server > Tools (tool annotations); OWASP Top 10 for LLM Applications 2025: LLM06 Excessive Agency
+
+  [CRITICAL] MCP-014 Resource outside declared access boundary
+    server:      legacy-files
+    target:      root:file:///
+    evidence:    allowed root is the entire filesystem
+    remediation: Declare narrow allowed roots. Canonicalize every resource URI before the boundary check, and reject traversal segments.
+    references:  MCP specification 2025-06-18, Server > Resources; OWASP Top 10 for LLM Applications 2025: LLM06 Excessive Agency
+
+  [HIGH] MCP-001 Tool requests broad or wildcard scope
+    server:      crm-proxy
+    target:      tool:delete_account
+    evidence:    scopes ['crm:*'] include ['crm:*']
+    remediation: Replace wildcard or admin scopes with the narrowest resource-specific scopes the tool needs.
+    references:  MCP specification 2025-06-18, Basic > Authorization; OWASP Top 10 for LLM Applications 2025: LLM06 Excessive Agency
+
+  [HIGH] MCP-001 Tool requests broad or wildcard scope
+    server:      crm-proxy
+    target:      tool:export_everything
+    evidence:    scopes ['admin'] include ['admin']
+    remediation: Replace wildcard or admin scopes with the narrowest resource-specific scopes the tool needs.
+    references:  MCP specification 2025-06-18, Basic > Authorization; OWASP Top 10 for LLM Applications 2025: LLM06 Excessive Agency
+
+  [HIGH] MCP-002 Read-only tool holds write-capable scopes
+    server:      crm-proxy
+    target:      tool:search_contacts
+    evidence:    readOnlyHint=true but scopes include ['crm:write']
+    remediation: Split read and write tools, and issue read-only tools a read-only credential. Annotations are hints and do not constrain what the credential can do.
+    references:  MCP specification 2025-06-18, Server > Tools (tool annotations); OWASP Top 10 for LLM Applications 2025: LLM06 Excessive Agency
+
+  [HIGH] MCP-004 Token issuer is not validated
+    server:      crm-proxy
+    target:      auth.issuer
+    evidence:    issuer 'http://auth.example.test' is not HTTPS
+    remediation: Validate the 'iss' claim against one expected HTTPS issuer, taken from configuration and not from the token.
+    references:  MCP specification 2025-06-18, Basic > Authorization; RFC 9068: JWT Profile for OAuth 2.0 Access Tokens (iss/aud validation); RFC 9700: Best Current Practice for OAuth 2.0 Security
+
+  [HIGH] MCP-004 Token issuer is not validated
+    server:      crm-proxy
+    target:      auth.issuer
+    evidence:    validate_issuer=false
+    remediation: Validate the 'iss' claim against one expected HTTPS issuer, taken from configuration and not from the token.
+    references:  MCP specification 2025-06-18, Basic > Authorization; RFC 9068: JWT Profile for OAuth 2.0 Access Tokens (iss/aud validation); RFC 9700: Best Current Practice for OAuth 2.0 Security
+
+  [HIGH] MCP-006 PKCE not required or allows the plain method
+    server:      crm-proxy
+    target:      auth.pkce
+    evidence:    pkce_required=false
+    remediation: Require PKCE with code_challenge_method=S256 for every authorization code flow, and reject 'plain'.
+    references:  MCP specification 2025-06-18, Basic > Authorization; RFC 7636: Proof Key for Code Exchange (PKCE); RFC 9700: Best Current Practice for OAuth 2.0 Security
+
+  [HIGH] MCP-009 Confused-deputy risk in OAuth proxy server
+    server:      crm-proxy
+    target:      auth.proxy
+    evidence:    role=proxy, static_client_id=true, dynamic_client_registration=true, per_client_consent=false
+    remediation: When a proxy uses one static client ID with a third-party authorization server, obtain explicit per-client user consent before forwarding to the third party. Do not rely on a prior consent cookie.
+    references:  MCP specification 2025-06-18, Basic > Security Best Practices; RFC 9700: Best Current Practice for OAuth 2.0 Security
+
+  [HIGH] MCP-012 Destructive tool does not require human approval
+    server:      ops-bot
+    target:      tool:rotate_credentials
+    evidence:    destructive verb in name; requires_approval=false; scopes ['ops:rotate']
+    remediation: Require explicit human confirmation, bound to the specific call, for destructive tools. Enforce it in the host or gateway, not in the tool description.
+    references:  MCP specification 2025-06-18, Server > Tools (tool annotations); OWASP Top 10 for LLM Applications 2025: LLM06 Excessive Agency
+
+  [HIGH] MCP-014 Resource outside declared access boundary
+    server:      legacy-files
+    target:      resource:file:///srv/share/../../etc/shadow
+    evidence:    path traversal segment '..'
+    remediation: Declare narrow allowed roots. Canonicalize every resource URI before the boundary check, and reject traversal segments.
+    references:  MCP specification 2025-06-18, Server > Resources; OWASP Top 10 for LLM Applications 2025: LLM06 Excessive Agency
+
+  [HIGH] MCP-015 Remote MCP endpoint is not HTTPS
+    server:      legacy-files
+    target:      transport
+    evidence:    url=http://files.example.test:8080/mcp
+    remediation: Serve remote MCP endpoints over HTTPS only. Bearer tokens sent over plaintext HTTP can be captured and replayed.
+    references:  MCP specification 2025-06-18, Basic > Authorization; RFC 9700: Best Current Practice for OAuth 2.0 Security
+
+  [MEDIUM] MCP-003 Remote MCP server without OAuth authorization
+    server:      ops-bot
+    target:      auth
+    evidence:    auth.type=static_token (long-lived shared secret)
+    remediation: Protect remote MCP servers as OAuth 2.1 resource servers. Replace static shared tokens with short-lived, audience-bound access tokens.
+    references:  MCP specification 2025-06-18, Basic > Authorization; RFC 9700: Best Current Practice for OAuth 2.0 Security
+
+  [MEDIUM] MCP-008 Resource indicators (RFC 8707) not required
+    server:      crm-proxy
+    target:      auth.resource_indicators
+    evidence:    resource_indicators_required=false
+    remediation: Require the 'resource' parameter in authorization and token requests, so that tokens are minted for this server's audience only.
+    references:  MCP specification 2025-06-18, Basic > Authorization; RFC 8707: Resource Indicators for OAuth 2.0
+
+  [MEDIUM] MCP-013 Tool annotation contradicts tool behavior or is missing
+    server:      ops-bot
+    target:      tool:rotate_credentials
+    evidence:    destructive verb in name but destructiveHint=false
+    remediation: Declare readOnlyHint and destructiveHint explicitly. Under the MCP specification defaults, a tool without annotations is treated as potentially destructive, so clients cannot make informed approval decisions.
+    references:  MCP specification 2025-06-18, Server > Tools (tool annotations)
+
+  [MEDIUM] MCP-014 Resource outside declared access boundary
+    server:      ops-bot
+    target:      resource:file:///var/lib/ops/state.json
+    evidence:    file resource exposed with no allowed_roots declared
+    remediation: Declare narrow allowed roots. Canonicalize every resource URI before the boundary check, and reject traversal segments.
+    references:  MCP specification 2025-06-18, Server > Resources; OWASP Top 10 for LLM Applications 2025: LLM06 Excessive Agency
+
+  [MEDIUM] MCP-016 Proxy uses a static downstream credential for all users
+    server:      ops-bot
+    target:      auth.downstream
+    evidence:    downstream_auth=static_credential
+    remediation: Map each MCP user to their own downstream authorization, using token exchange or per-user OAuth. A shared service credential makes every user as powerful as the service.
+    references:  MCP specification 2025-06-18, Basic > Security Best Practices; RFC 8693: OAuth 2.0 Token Exchange; OWASP Top 10 for LLM Applications 2025: LLM06 Excessive Agency
+
+  [LOW] MCP-013 Tool annotation contradicts tool behavior or is missing
+    server:      crm-proxy
+    target:      tool:export_everything
+    evidence:    no annotations declared
+    remediation: Declare readOnlyHint and destructiveHint explicitly. Under the MCP specification defaults, a tool without annotations is treated as potentially destructive, so clients cannot make informed approval decisions.
+    references:  MCP specification 2025-06-18, Server > Tools (tool annotations)

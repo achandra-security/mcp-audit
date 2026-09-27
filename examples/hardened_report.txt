@@ -1,0 +1,4 @@
+mcp-audit assessment report
+===========================
+
+configs/hardened.json: 0 finding(s)

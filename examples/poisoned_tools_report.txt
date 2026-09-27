@@ -1,0 +1,32 @@
+mcp-audit assessment report
+===========================
+
+configs/poisoned_tools.json: 4 finding(s) (critical=1, high=3)
+
+  [CRITICAL] MCP-010 Tool description contains prompt-injection indicators (tool poisoning)
+    server:      weather
+    target:      tool:get_forecast
+    evidence:    pseudo-system tag; concealment from user; reference to credentials or secrets; pre-emptive instruction to the model; invisible characters ['U+200B']
+    remediation: Treat tool descriptions as untrusted input. Pin and review them, show users what the model sees, and alert when a description changes after approval (rug pull).
+    references:  MCP specification 2025-06-18, Server > Tools (tool annotations); OWASP Top 10 for LLM Applications 2025: LLM01 Prompt Injection
+
+  [HIGH] MCP-010 Tool description contains prompt-injection indicators (tool poisoning)
+    server:      weather
+    target:      tool:daily_digest
+    evidence:    instruction to send data to a URL
+    remediation: Treat tool descriptions as untrusted input. Pin and review them, show users what the model sees, and alert when a description changes after approval (rug pull).
+    references:  MCP specification 2025-06-18, Server > Tools (tool annotations); OWASP Top 10 for LLM Applications 2025: LLM01 Prompt Injection
+
+  [HIGH] MCP-011 Tool shadowing across servers
+    server:      mail, weather
+    target:      tool:Send-Email
+    evidence:    name collides after normalization across servers ['mail', 'weather']: ['Send-Email', 'send_email']
+    remediation: Namespace tools per server in the host (for example server.tool), reject duplicate or confusable names, and flag descriptions that try to change how other servers' tools are used.
+    references:  MCP specification 2025-06-18, Server > Tools (tool annotations); OWASP Top 10 for LLM Applications 2025: LLM01 Prompt Injection
+
+  [HIGH] MCP-011 Tool shadowing across servers
+    server:      weather
+    target:      tool:daily_digest
+    evidence:    description references tool 'send_email' owned by server 'mail'
+    remediation: Namespace tools per server in the host (for example server.tool), reject duplicate or confusable names, and flag descriptions that try to change how other servers' tools are used.
+    references:  MCP specification 2025-06-18, Server > Tools (tool annotations); OWASP Top 10 for LLM Applications 2025: LLM01 Prompt Injection
