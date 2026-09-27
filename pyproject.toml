@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mcp-audit"
+version = "0.1.0"
+description = "Offline security assessment of Model Context Protocol (MCP) server configurations: OAuth, tool privilege, poisoning, shadowing, and approval gates."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Aakash Chandra" }]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.scripts]
+mcp-audit = "mcp_audit.cli:main"
+
+[tool.setuptools]
+packages = ["mcp_audit"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
